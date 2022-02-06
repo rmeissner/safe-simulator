@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from "ethers"
 import { StepHandler } from "../analyzer"
-import { parseCall, parseDelegateCall, parseReturn, parseStorage } from "../parsers"
+import { CallParams, parseCall, parseDelegateCall, parseReturn, parseStorage } from "../parsers"
 import { StepData } from "../types"
 
 export class StorageHandler implements StepHandler {
@@ -16,16 +16,16 @@ export class StorageHandler implements StepHandler {
             parseStorage(data)
         )
     }
-    
-    results(): void {
-        console.log(JSON.stringify(this.storageChanges, undefined, " "))
-    }
+}
+
+export interface ExtendedCallParams extends CallParams {
+    returnData?: string,
+    depth?: string
 }
 
 export interface CallElement {
     type: string
-    meta: any
-    returnData?: string
+    params: ExtendedCallParams
     depth: BigNumber
     parent?: CallElement
     children: CallElement[]
@@ -33,12 +33,16 @@ export interface CallElement {
 
 export class CallHandler implements StepHandler {
 
-    readonly calls: Map<string, any[]> = new Map()
+    readonly calls: Map<string, ExtendedCallParams[]> = new Map()
     readonly roots: CallElement[] = []
+    private parseFunctions: Record<string, (data: StepData) => CallParams> = {
+        "CALL": parseCall,
+        "DELEGATECALL": parseDelegateCall,
+    }
     private currentCall?: CallElement
     private previousStep?: StepData
 
-    addCall(address: Buffer, data: any) {
+    addCall(address: Buffer, data: ExtendedCallParams) {
         const a = ethers.utils.getAddress(ethers.utils.hexlify(address))
         if(!this.calls[a]) {
             this.calls[a] = []
@@ -57,45 +61,29 @@ export class CallHandler implements StepHandler {
     handle(data: StepData) {
         const current = this.currentCall
         if(current && BigNumber.from(data.depth) <= current.depth) {
-            current.meta.returnData = this.getReturnData()
+            current.params.returnData = this.getReturnData()
+            current.params.depth = current.depth.toString()
             this.currentCall = current?.parent
             current.parent = undefined
         }
         this.previousStep = data
-        if (data.opcode.name === "CALL") {
-            const parent = current
-            const element: CallElement = {
-                type: data.opcode.name,
-                meta: parseCall(data),
-                depth: BigNumber.from(data.depth),
-                parent,
-                children: []
-            }
-            parent?.children.push(element)
-            if (!parent) {
-                this.roots.push(element)
-            }
-            this.addCall(data.address, element.meta)
-            this.currentCall = element
-        } else if (data.opcode.name === "DELEGATECALL") {
-            const parent = current
-            const element: CallElement = {
-                type: data.opcode.name,
-                meta: parseDelegateCall(data),
-                depth: BigNumber.from(data.depth),
-                parent,
-                children: []
-            }
-            parent?.children.push(element)
-            if (!parent) {
-                this.roots.push(element)
-            }
-            this.currentCall = element
+        const parseFunction = this.parseFunctions[data.opcode.name]
+        if (!parseFunction) return
+        const parent = current
+        const element: CallElement = {
+            type: data.opcode.name,
+            params: parseFunction(data),
+            depth: BigNumber.from(data.depth),
+            parent,
+            children: []
         }
-    }
-
-    results(): void {
-        console.log(JSON.stringify(this.roots, undefined, " "))
-        console.log(JSON.stringify(this.calls, undefined, " "))
+        parent?.children.push(element)
+        if (!parent) {
+            this.roots.push(element)
+        }
+        if (element.type === "CALL") {
+            this.addCall(data.address, element.params)
+        }
+        this.currentCall = element
     }
 }

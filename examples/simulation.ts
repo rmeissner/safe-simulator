@@ -24,13 +24,17 @@ async function run(): Promise<void> {
     const safeInfo = await infoProvider.loadInfo(safeTx.data.safe)
     console.log("Safe Information", safeInfo)
 
+    const callHandler = new CallHandler()
+    const storageHandler = new StorageHandler()
     const handlers: StepHandler[] = [ 
-        new CallHandler(),
-        new StorageHandler()
+        callHandler,
+        storageHandler
     ]
     const analyzer = new HandlerAnalyzer(handlers)
     const txHash = await simulator.simulateMultiSigTransaction(safeInfo, safeTx.data, analyzer)
-    analyzer.results()
+    console.log(JSON.stringify(callHandler.roots, undefined, " "))
+    console.log(callHandler.calls)
+    console.log(storageHandler.storageChanges)
     const txReceipt = await provider.getTransactionReceipt(txHash)
     console.log("logs", txReceipt.logs)
     console.log("Done")

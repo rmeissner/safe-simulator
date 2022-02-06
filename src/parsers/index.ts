@@ -9,7 +9,19 @@ const loadMem = (memory: Buffer, location: number, size: number): Buffer => {
     return memory.slice(location, location + size)
 }
 
-export const parseDelegateCall = (step: StepData) => {
+export interface CallParams {
+    gas: number,
+    to: string,
+    data: string,
+    value: string
+}
+
+export interface StorageParams {
+    slot: string,
+    value: string
+}
+
+export const parseDelegateCall = (step: StepData): CallParams => {
     const gas = BigNumber.from(peekStack(step.stack, 0)).toNumber()
     const to = ethers.utils.getAddress(ethers.utils.hexlify(peekStack(step.stack, 1)))
     const dataLocation = BigNumber.from(peekStack(step.stack, 2)).toNumber()
@@ -18,14 +30,15 @@ export const parseDelegateCall = (step: StepData) => {
     return {
         gas,
         to,
-        data
+        data,
+        value: "0x0"
     }
 }
 
-export const parseCall = (step: StepData) => {
+export const parseCall = (step: StepData): CallParams => {
     const gas = BigNumber.from(peekStack(step.stack, 0)).toNumber()
     const to = ethers.utils.getAddress(ethers.utils.hexlify(peekStack(step.stack, 1)))
-    const value = BigNumber.from(peekStack(step.stack, 2)).toNumber()
+    const value = BigNumber.from(peekStack(step.stack, 2)).toHexString()
     const dataLocation = BigNumber.from(peekStack(step.stack, 3)).toNumber()
     const dataSize = BigNumber.from(peekStack(step.stack, 4)).toNumber()
     const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
@@ -37,7 +50,7 @@ export const parseCall = (step: StepData) => {
     }
 }
 
-export const parseStorage = (step: StepData) => {
+export const parseStorage = (step: StepData): StorageParams => {
     const slot = ethers.utils.hexlify(peekStack(step.stack, 0))
     const value = ethers.utils.hexlify(peekStack(step.stack, 1))
     return {
