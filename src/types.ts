@@ -1,5 +1,4 @@
 import { BigNumberish } from "ethers"
-import { Log } from "@ethersproject/providers"
 
 export interface MetaTransaction {
     to: string,

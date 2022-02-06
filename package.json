@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Ganache extension to simulate Safe transaction",
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "jest",
     "build": "rimraf dist && tsc",

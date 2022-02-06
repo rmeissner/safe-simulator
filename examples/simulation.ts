@@ -3,6 +3,7 @@ require('dotenv').config()
 
 import axios from 'axios'
 import { ethers } from 'ethers'
+import Ganache from 'ganache'
 import { exit } from 'process'
 import { HandlerAnalyzer, StepHandler } from '../src/analyzer'
 import { CallHandler, StorageHandler } from '../src/handlers'
@@ -16,8 +17,10 @@ async function run(): Promise<void> {
     const network = process.env.NETWORK!!
     const serviceUrl = process.env.SERVICE_URL!!
     const safeTxHash = process.env.SAFE_TX_HASH!!
-    const simulator = new Simulator(nodeUrl || network)
-    const provider = new ethers.providers.Web3Provider(simulator.provider as any)
+    const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
+    const connector = Ganache.provider(options)
+    const simulator = new Simulator(connector)
+    const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider)
     const safeTx = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
     console.log(safeTx.data)
