@@ -1,12 +1,18 @@
 import { ethers } from "ethers";
 import { AddressOne, safeInterface } from "./contracts";
-import { SafeInfo } from "./types";
+import { Logger, SafeInfo } from "./types";
 
 export class SafeInfoProvider {
     readonly provider: ethers.providers.Provider
+    private logger?: Logger
 
-    constructor(nodeUrl: string) {
-        this.provider = new ethers.providers.JsonRpcProvider(nodeUrl)
+    static withNodeUrl(nodeUrl: string, logger?: Logger): SafeInfoProvider {
+        return new this(new ethers.providers.JsonRpcProvider(nodeUrl), logger)
+    }
+
+    constructor(provider: ethers.providers.Provider, logger?: Logger) {
+        this.provider = provider
+        this.logger = logger
     }
 
     async loadInfo(safeAddress: string): Promise<SafeInfo> {
@@ -16,11 +22,11 @@ export class SafeInfoProvider {
             const modulePage = await safe.getModulesPaginated(AddressOne, 10)
             modules = modulePage[0]
         } catch (error) {
-            console.error(error)
+            this.logger?.(error)
             try {
                 modules = await safe.getModules()
             } catch (error) {
-                console.error(error)
+                this.logger?.(error)
             }
         }
         const network = await this.provider.getNetwork()

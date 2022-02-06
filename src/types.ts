@@ -1,20 +1,5 @@
 import { BigNumberish } from "ethers"
-
-export interface CheckResult {
-    id: CheckId
-    data?: CheckData
-}
-
-export interface CheckData {
-    group: string
-    message: any
-}
-
-export type CheckId = "info" | "unknown_delegatecall" | "target_self" | "delegatecall" | "change_safe_storage" | "check_error"
-
-export interface Check {
-    perform(info: SafeInfo, target: Target): Promise<CheckResult[]>
-}
+import { Log } from "@ethersproject/providers"
 
 export interface MetaTransaction {
     to: string,
@@ -34,30 +19,6 @@ export interface MultisigTransaction extends MetaTransaction {
     safeTxHash: string
 }
 
-export interface SafeSnapContext {
-    type: "safesnap",
-    proposalHash?: string, 
-    nonces: string[]
-}
-
-export type ModuleContext = SafeSnapContext
-
-export interface ModuleTarget {
-    type: "module",
-    safe: string,
-    module: string,
-    context?: ModuleContext,
-    txs: MetaTransaction[]
-}
-
-export interface MultisigTarget {
-    type: "multisig",
-    safe: string,
-    tx: MultisigTransaction
-}
-
-export type Target = ModuleTarget | MultisigTarget
-
 export interface SafeInfo {
     address: string,
     owners: string[],
@@ -65,3 +26,32 @@ export interface SafeInfo {
     nonce: number,
     chainId: BigNumberish
 }
+
+export type Logger = (message?: any, ...optionalParams: any[]) => void
+
+export interface Analyzer {
+    handleStep(data: StepData): void
+}
+
+export interface StepData {
+    account: {
+        nonce: bigint;
+        balance: bigint;
+        stateRoot: Buffer;
+        codeHash: Buffer;
+    };
+    address: Buffer;
+    codeAddress: Buffer;
+    depth: bigint;
+    gasLeft: bigint;
+    gasRefund: bigint;
+    memory: Buffer;
+    memoryWordCount: bigint;
+    opcode: {
+        name: string;
+        fee: number;
+    };
+    pc: bigint;
+    returnStack: Buffer[];
+    stack: Buffer[];
+};

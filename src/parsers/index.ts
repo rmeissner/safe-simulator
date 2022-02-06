@@ -1,0 +1,54 @@
+import { BigNumber, ethers } from "ethers"
+import { StepData } from "../types"
+
+const peekStack = (stack: Buffer[], position: number): Buffer => {
+    return stack[stack.length - (position + 1)]
+}
+
+const loadMem = (memory: Buffer, location: number, size: number): Buffer => {
+    return memory.slice(location, location + size)
+}
+
+export const parseDelegateCall = (step: StepData) => {
+    const gas = BigNumber.from(peekStack(step.stack, 0)).toNumber()
+    const to = ethers.utils.getAddress(ethers.utils.hexlify(peekStack(step.stack, 1)))
+    const dataLocation = BigNumber.from(peekStack(step.stack, 2)).toNumber()
+    const dataSize = BigNumber.from(peekStack(step.stack, 3)).toNumber()
+    const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
+    return {
+        gas,
+        to,
+        data
+    }
+}
+
+export const parseCall = (step: StepData) => {
+    const gas = BigNumber.from(peekStack(step.stack, 0)).toNumber()
+    const to = ethers.utils.getAddress(ethers.utils.hexlify(peekStack(step.stack, 1)))
+    const value = BigNumber.from(peekStack(step.stack, 2)).toNumber()
+    const dataLocation = BigNumber.from(peekStack(step.stack, 3)).toNumber()
+    const dataSize = BigNumber.from(peekStack(step.stack, 4)).toNumber()
+    const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
+    return {
+        gas,
+        to,
+        value,
+        data
+    }
+}
+
+export const parseStorage = (step: StepData) => {
+    const slot = ethers.utils.hexlify(peekStack(step.stack, 0))
+    const value = ethers.utils.hexlify(peekStack(step.stack, 1))
+    return {
+        slot,
+        value
+    }
+}
+
+export const parseReturn = (step: StepData) => {
+    const dataLocation = BigNumber.from(peekStack(step.stack, 0)).toNumber()
+    const dataSize = BigNumber.from(peekStack(step.stack, 1)).toNumber()
+    const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
+    return data
+}

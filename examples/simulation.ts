@@ -2,26 +2,43 @@
 require('dotenv').config()
 
 import axios from 'axios'
+import { ethers } from 'ethers'
+import { exit } from 'process'
+import { HandlerAnalyzer, StepHandler } from '../src/analyzer'
+import { CallHandler, StorageHandler } from '../src/handlers'
 import { SafeInfoProvider } from '../src/info'
 import { Simulator } from '../src/simulator'
-import { Check, CheckResult, MultisigTransaction } from "../src/types"
+import { MultisigTransaction } from "../src/types"
 
 async function run(): Promise<void> {
     const verbose: boolean = process.env.VERBOSE === "true"
-    const nodeUrl: string = process.env.NODE_URL!!
-    const serviceUrl: string = process.env.SERVICE_URL!!
-    const safeTxHash: string = process.env.SAFE_TX_HASH!!
-    const infoProvider = new SafeInfoProvider(nodeUrl)
+    const nodeUrl = process.env.NODE_URL
+    const network = process.env.NETWORK!!
+    const serviceUrl = process.env.SERVICE_URL!!
+    const safeTxHash = process.env.SAFE_TX_HASH!!
+    const simulator = new Simulator(nodeUrl || network)
+    const provider = new ethers.providers.Web3Provider(simulator.provider as any)
+    const infoProvider = new SafeInfoProvider(provider)
     const safeTx = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
     console.log(safeTx.data)
     const safeInfo = await infoProvider.loadInfo(safeTx.data.safe)
     console.log("Safe Information", safeInfo)
 
-
-    const simulator = new Simulator(nodeUrl)
-    const results: CheckResult[] = []
-    await simulator.simulateMultiSigTransaction(safeInfo, safeTx.data, results)
-    console.log({results})
+    const handlers: StepHandler[] = [ 
+        new CallHandler(),
+        new StorageHandler()
+    ]
+    const analyzer = new HandlerAnalyzer(handlers)
+    const txHash = await simulator.simulateMultiSigTransaction(safeInfo, safeTx.data, analyzer)
+    analyzer.results()
+    const txReceipt = await provider.getTransactionReceipt(txHash)
+    console.log("logs", txReceipt.logs)
+    console.log("Done")
 }
 
 run()
+    .catch((e) => { 
+        console.error(e)
+        exit(1) 
+    })
+    .then(() => { exit(0) })

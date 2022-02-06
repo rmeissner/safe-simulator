@@ -1,17 +1,15 @@
-import { getAddress } from "@ethersproject/address"
 import { ethers } from "ethers"
 import Ganache, { EthereumProvider } from "ganache"
-import { promisify } from "util"
 import { safeInterface } from "./contracts"
-import { CheckResult, MetaTransaction, MultisigTransaction, SafeInfo } from "./types"
+import { Analyzer, Logger, MultisigTransaction, SafeInfo } from "./types"
 
 export class Simulator {
 
     readonly provider: EthereumProvider
-    private logger?: (message?: any, ...optionalParams: any[]) => void
+    private logger?: Logger
 
-    constructor(nodeUrl: string, logger?: (message?: any, ...optionalParams: any[]) => void) { 
-        const options: any = { dbPath: "/", fork: nodeUrl, gasLimit: 100000000, gasPrice: "0x0" }
+    constructor(nodeUrlOrNetworkName: string, logger?: Logger) {
+        const options: any = { dbPath: "/", fork: nodeUrlOrNetworkName, gasLimit: 100_000_000, gasPrice: "0x0", logging: { quiet: true, verbose: false, debug: false } }
         this.provider = Ganache.provider(options)
         this.logger = logger
     }
@@ -51,21 +49,7 @@ export class Simulator {
         return true
     }
 
-    private async evaluateLogs(txHash: string, results?: CheckResult[]) {
-        const receipt = await this.provider.send("eth_getTransactionReceipt", [txHash])
-        const logs = receipt?.logs
-        if (!logs) return
-        this.logger?.("Logs", receipt?.logs)
-        for (const log of logs) {
-            const data = {
-                group: "logs",
-                message: log
-            }
-            results?.push({ id: "info", data })
-        }
-    }
-
-    async simulateMultiSigTransaction(safeInfo: SafeInfo, transaction: MultisigTransaction, results?: CheckResult[]) {
+    async simulateMultiSigTransaction(safeInfo: SafeInfo, transaction: MultisigTransaction, analyzer?: Analyzer): Promise<string> {
         this.logger?.("Simulate Multisig Transaction")
         this.logger?.("Client", await this.provider.send("web3_clientVersion", []))
         const approveHash = await this.getHashForCurrentNonce(safeInfo, transaction)
@@ -86,15 +70,8 @@ export class Simulator {
             .map((owner) => `000000000000000000000000${owner.slice(2)}000000000000000000000000000000000000000000000000000000000000000001`)
             .join("")
         this.logger?.("Signatures: " + signatures)
-        this.provider.on("ganache:vm:tx:before", (event) => {
-            console.log("before", event)
-        });
         this.provider.on("ganache:vm:tx:step", (event) => {
-            if (event.data.opcode.name !== "CALL" && event.data.opcode.name !== "SSTORE") return
-            console.log("step", event)
-        });
-        this.provider.on("ganache:vm:tx:after", (event) => {
-            console.log("after", event)
+            analyzer?.handleStep(event.data)
         });
         const ethTxHash = await this.provider.request({method: "eth_sendTransaction", params: [{
             to: safeInfo.address,
@@ -114,6 +91,6 @@ export class Simulator {
             gas: ethers.BigNumber.from(100_000_000).toHexString()
         }]})
         this.provider.clearListeners()
-        await this.evaluateLogs(ethTxHash, results)
+        return ethTxHash
     }
 }
