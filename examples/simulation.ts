@@ -3,11 +3,12 @@ require('dotenv').config()
 
 import axios from 'axios'
 import { ethers } from 'ethers'
-import Ganache from 'ganache'
+import Ganache from 'ganache-core'
 import { exit } from 'process'
 import { HandlerAnalyzer, StepHandler } from '../src/analyzer'
 import { CallHandler, StorageHandler } from '../src/handlers'
 import { SafeInfoProvider } from '../src/info'
+import { GanacheCoreConnector, GanacheV7Connector } from '../src/connectors'
 import { Simulator } from '../src/simulator'
 import { MultisigTransaction } from "../src/types"
 
@@ -17,11 +18,12 @@ async function run(): Promise<void> {
     const network = process.env.NETWORK!!
     const serviceUrl = process.env.SERVICE_URL!!
     const safeTxHash = process.env.SAFE_TX_HASH!!
-    const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
-    const connector = Ganache.provider(options)
+    const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", vmErrorsOnRPCResponse: false, logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
+    const ganache = Ganache.provider(options)
+    const connector = new GanacheCoreConnector(ganache)
     const simulator = new Simulator(connector)
     const provider = new ethers.providers.Web3Provider(connector as any)
-    const infoProvider = new SafeInfoProvider(provider)
+    const infoProvider = new SafeInfoProvider(provider, console.log)
     const safeTx = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
     console.log(safeTx.data)
     const safeInfo = await infoProvider.loadInfo(safeTx.data.safe)
@@ -39,6 +41,7 @@ async function run(): Promise<void> {
     console.log(callHandler.calls)
     console.log(storageHandler.storageChanges)
     const txReceipt = await provider.getTransactionReceipt(txHash)
+    console.log("status", txReceipt.status)
     console.log("logs", txReceipt.logs)
     console.log("Done")
 }

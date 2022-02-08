@@ -54,3 +54,10 @@ export interface StepData {
     returnStack: Buffer[];
     stack: Buffer[];
 };
+
+export interface EvmConnector {
+    request(data: { method: string, params: any[] }): Promise<any>
+    unlockAccount(address: string): Promise<void>
+    registerAnalyzer(analyzer: Analyzer): void
+    unregisterAnalyzer(analyzer: Analyzer): void
+}

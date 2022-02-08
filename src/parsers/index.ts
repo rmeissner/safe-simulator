@@ -2,7 +2,12 @@ import { BigNumber, ethers } from "ethers"
 import { StepData } from "../types"
 
 const peekStack = (stack: Buffer[], position: number): Buffer => {
-    return stack[stack.length - (position + 1)]
+    const element = stack[stack.length - (position + 1)]
+    // TODO: move to connector
+    if ((element as any).words) {
+        return (element as any).toBuffer()
+    }
+    return element
 }
 
 const loadMem = (memory: Buffer, location: number, size: number): Buffer => {

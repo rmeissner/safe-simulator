@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { EthereumProvider } from "ganache"
+import { EvmConnector } from "."
 import { safeInterface } from "./contracts"
 import { Analyzer, Logger, MultisigTransaction, SafeInfo } from "./types"
 
@@ -7,7 +7,7 @@ export class Simulator {
 
     private logger?: Logger
 
-    constructor(private connector: EthereumProvider, logger?: Logger) {
+    constructor(private connector: EvmConnector, logger?: Logger) {
         this.logger = logger
     }
 
@@ -54,14 +54,7 @@ export class Simulator {
         const approveHash = await this.getHashForCurrentNonce(safeInfo, transaction)
         for (const owner of safeInfo.owners) {
             this.logger?.("Prepare", owner)
-            await this.connector.request({
-                method: "evm_addAccount",
-                params: [owner, ""]
-            })
-            await this.connector.request({
-                method: "personal_unlockAccount",
-                params: [owner, ""]
-            })
+            await this.connector.unlockAccount(owner)
             await this.connector.request({
                 method: "eth_sendTransaction",
                 params: [{
@@ -78,9 +71,7 @@ export class Simulator {
             .map((owner) => `000000000000000000000000${owner.slice(2)}000000000000000000000000000000000000000000000000000000000000000001`)
             .join("")
         this.logger?.("Signatures: " + signatures)
-        this.connector.on("ganache:vm:tx:step", (event) => {
-            analyzer?.handleStep(event.data)
-        });
+        if (analyzer) this.connector.registerAnalyzer(analyzer);
         const ethTxHash = await this.connector.request({
             method: "eth_sendTransaction", params: [{
                 to: safeInfo.address,
@@ -100,7 +91,7 @@ export class Simulator {
                 gas: ethers.BigNumber.from(100_000_000).toHexString()
             }]
         })
-        this.connector.clearListeners()
+        if (analyzer) this.connector.unregisterAnalyzer(analyzer)
         return ethTxHash
     }
 }
