@@ -21,7 +21,7 @@ async function run(): Promise<void> {
     const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", vmErrorsOnRPCResponse: false, logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
     const ganache = Ganache.provider(options)
     const connector = new GanacheCoreConnector(ganache)
-    const simulator = new Simulator(connector)
+    const simulator = new Simulator(connector, console.log)
     const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider, console.log)
     const safeTx = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)

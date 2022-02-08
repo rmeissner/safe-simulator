@@ -32,23 +32,6 @@ export class Simulator {
         })
     }
 
-    private async isNonceChange(storageSlot: string, storageBefore: string, storageAfter: string, usedNonce: number) {
-        if (usedNonce < 0) return false
-        // Nonce is stored at slot 5
-        if (storageSlot !== "0x0000000000000000000000000000000000000000000000000000000000000005") return false
-        const expectedOriginalNonce = ethers.BigNumber.from(storageBefore).toNumber()
-        if (expectedOriginalNonce != usedNonce) {
-            this.logger?.("Unexpected original nonce slot state (expected", usedNonce, "got", expectedOriginalNonce, ")")
-            return false
-        }
-        const expectedNewNonce = ethers.BigNumber.from(storageAfter).toNumber()
-        if (expectedNewNonce != (usedNonce + 1)) {
-            this.logger?.("Unexpected new nonce slot state (expected", (usedNonce + 1), "got", expectedNewNonce, ")")
-            return false
-        }
-        return true
-    }
-
     async simulateMultiSigTransaction(safeInfo: SafeInfo, transaction: MultisigTransaction, analyzer?: Analyzer): Promise<string> {
         this.logger?.("Simulate Multisig Transaction")
         const approveHash = await this.getHashForCurrentNonce(safeInfo, transaction)

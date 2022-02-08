@@ -5,7 +5,7 @@ const peekStack = (stack: Buffer[], position: number): Buffer => {
     const element = stack[stack.length - (position + 1)]
     // TODO: move to connector
     if ((element as any).words) {
-        return (element as any).toBuffer()
+        return (element as any).toArray()
     }
     return element
 }
@@ -65,8 +65,12 @@ export const parseStorage = (step: StepData): StorageParams => {
 }
 
 export const parseReturn = (step: StepData) => {
-    const dataLocation = BigNumber.from(peekStack(step.stack, 0)).toNumber()
-    const dataSize = BigNumber.from(peekStack(step.stack, 1)).toNumber()
-    const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
-    return data
+    try {
+        const dataLocation = BigNumber.from(peekStack(step.stack, 0)).toNumber()
+        const dataSize = BigNumber.from(peekStack(step.stack, 1)).toNumber()
+        const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
+        return data
+    } catch {
+        return undefined
+    }
 }

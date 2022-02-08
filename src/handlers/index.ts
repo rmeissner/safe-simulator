@@ -9,12 +9,9 @@ export class StorageHandler implements StepHandler {
         if(data.opcode.name !== "SSTORE") return 
         
         const address = ethers.utils.getAddress(ethers.utils.hexlify(data.address))
-        if(!this.storageChanges[address]) {
-            this.storageChanges[address] = []
-        }
-        this.storageChanges[address].push(
-            parseStorage(data)
-        )
+        const changes = this.storageChanges.get(address) || []
+        changes.push(parseStorage(data))
+        this.storageChanges.set(address, changes)
     }
 }
 
@@ -44,10 +41,9 @@ export class CallHandler implements StepHandler {
 
     addCall(address: Buffer, data: ExtendedCallParams) {
         const a = ethers.utils.getAddress(ethers.utils.hexlify(address))
-        if(!this.calls[a]) {
-            this.calls[a] = []
-        }
-        this.calls[a].push(data)
+        const calls = this.calls.get(a) || []
+        calls.push(data)
+        this.calls.set(a, calls)
     }
 
     getReturnData(): string | undefined {
