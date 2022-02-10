@@ -1,5 +1,7 @@
 ## Safe Simulator Lib
 
+[![npm version](https://badge.fury.io/js/@rmeissner%2Fsafe-simulator.svg)](https://www.npmjs.com/package/@rmeissner/safe-simulator)
+
 ### Usage
 
 - Install library
