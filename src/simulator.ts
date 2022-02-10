@@ -17,15 +17,15 @@ export class Simulator {
             params: [{
                 to: safeInfo.address,
                 data: safeInterface.encodeFunctionData("getTransactionHash", [
-                    transaction.to,
+                    transaction.to || ethers.constants.AddressZero,
                     transaction.value,
                     transaction.data || "0x",
                     transaction.operation,
                     transaction.safeTxGas,
                     transaction.baseGas,
                     transaction.gasPrice,
-                    transaction.gasToken,
-                    transaction.refundReceiver,
+                    transaction.gasToken || ethers.constants.AddressZero,
+                    transaction.refundReceiver || ethers.constants.AddressZero,
                     safeInfo.nonce
                 ])
             }, "latest"]
@@ -59,15 +59,15 @@ export class Simulator {
             method: "eth_sendTransaction", params: [{
                 to: safeInfo.address,
                 data: safeInterface.encodeFunctionData("execTransaction", [
-                    transaction.to,
+                    transaction.to || ethers.constants.AddressZero,
                     transaction.value,
                     transaction.data || "0x",
                     transaction.operation,
                     transaction.safeTxGas,
                     transaction.baseGas,
                     transaction.gasPrice,
-                    transaction.gasToken,
-                    transaction.refundReceiver,
+                    transaction.gasToken || ethers.constants.AddressZero,
+                    transaction.refundReceiver || ethers.constants.AddressZero,
                     signatures
                 ]),
                 from: safeInfo.owners[0],
