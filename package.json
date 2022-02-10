@@ -1,7 +1,7 @@
 {
   "name": "@rmeissner/safe-simulator",
   "private": false,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Library to simulate and analyze Safe transaction",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -11,7 +11,8 @@
   "scripts": {
     "test": "jest",
     "build": "rimraf dist && tsc",
-    "example": "ts-node examples/simulation.ts"
+    "example": "ts-node examples/simulation.ts",
+    "prepublish": "yarn build"
   },
   "husky": {
     "hooks": {}
