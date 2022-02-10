@@ -1,7 +1,8 @@
 {
-  "name": "safe-simulator",
+  "name": "@rmeissner/safe-simulator",
+  "private": false,
   "version": "0.1.0",
-  "description": "Ganache extension to simulate Safe transaction",
+  "description": "Library to simulate and analyze Safe transaction",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [

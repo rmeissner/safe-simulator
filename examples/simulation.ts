@@ -3,7 +3,7 @@ require('dotenv').config()
 
 import axios from 'axios'
 import { ethers } from 'ethers'
-import Ganache from 'ganache-core'
+import Ganache from 'ganache'
 import { exit } from 'process'
 import { HandlerAnalyzer, StepHandler } from '../src/analyzer'
 import { CallHandler, StorageHandler } from '../src/handlers'
@@ -20,7 +20,7 @@ async function run(): Promise<void> {
     const safeTxHash = process.env.SAFE_TX_HASH!!
     const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", vmErrorsOnRPCResponse: false, logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
     const ganache = Ganache.provider(options)
-    const connector = new GanacheCoreConnector(ganache)
+    const connector = new GanacheV7Connector(ganache)
     const simulator = new Simulator(connector, console.log)
     const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider, console.log)
