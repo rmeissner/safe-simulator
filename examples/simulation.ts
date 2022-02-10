@@ -24,19 +24,37 @@ async function run(): Promise<void> {
     const simulator = new Simulator(connector, console.log)
     const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider, console.log)
-    const safeTx = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
-    console.log(safeTx.data)
-    const safeInfo = await infoProvider.loadInfo(safeTx.data.safe)
+    const resp = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
+    const safeTx = resp.data
+    /*
+    // It is also possible to directly define the tx
+    const safeTx: MultisigTransaction = {
+        safe: "0xAdCa2CCcF35CbB27fD757f1c0329DF767f8E38F0",
+        to: "0xBDA937F5C5f4eFB2261b6FcD25A71A1C350FdF20",
+        value: "0",
+        data: new ethers.utils.Interface(["function withdraw() external"]).encodeFunctionData("withdraw", []),
+        operation: 0,
+        nonce: 0,
+        safeTxGas: "0",
+        baseGas: "0",
+        gasPrice: "0",
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+        safeTxHash: ""
+    }
+    */
+    console.log(safeTx)
+    const safeInfo = await infoProvider.loadInfo(safeTx.safe)
     console.log("Safe Information", safeInfo)
 
     const callHandler = new CallHandler()
     const storageHandler = new StorageHandler()
-    const handlers: StepHandler[] = [ 
+    const handlers: StepHandler[] = [
         callHandler,
         storageHandler
     ]
     const analyzer = new HandlerAnalyzer(handlers)
-    const txHash = await simulator.simulateMultiSigTransaction(safeInfo, safeTx.data, analyzer)
+    const txHash = await simulator.simulateMultiSigTransaction(safeInfo, safeTx, analyzer)
     console.log(JSON.stringify(callHandler.roots, undefined, " "))
     console.log(callHandler.calls)
     console.log(storageHandler.storageChanges)
@@ -47,8 +65,8 @@ async function run(): Promise<void> {
 }
 
 run()
-    .catch((e) => { 
+    .catch((e) => {
         console.error(e)
-        exit(1) 
+        exit(1)
     })
     .then(() => { exit(0) })
