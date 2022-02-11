@@ -1,4 +1,5 @@
 //import { EthereumProvider } from "ganache";
+import { ethers } from "ethers";
 import { EvmConnector } from "..";
 import { Analyzer } from "../types";
 
@@ -15,6 +16,14 @@ export class GanacheV7Connector implements EvmConnector {
             method: "evm_addAccount",
             params: [address, ""]
         })
+        try {
+            await this.request({
+                method: "evm_setAccountBalance",
+                params: [address, ethers.utils.parseEther("100").toHexString()]
+            })
+        } catch(e) {
+            // Ignored as function is not released yet
+        }
         await this.request({
             method: "personal_unlockAccount",
             params: [address, ""]
