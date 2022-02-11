@@ -1,8 +1,9 @@
 
 require('dotenv').config()
 
+import axios from 'axios'
 import { ethers } from 'ethers'
-import Ganache from 'ganache'
+import Ganache from 'ganache-core'
 import { exit } from 'process'
 import { HandlerAnalyzer, StepHandler } from '../src/analyzer'
 import { CallHandler, StorageHandler } from '../src/handlers'
@@ -23,29 +24,12 @@ async function run(): Promise<void> {
     const safeTxHash = process.env.SAFE_TX_HASH!!
     const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", vmErrorsOnRPCResponse: false, logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
     const ganache = Ganache.provider(options)
-    const connector = new GanacheV7Connector(ganache)
+    const connector = new GanacheCoreConnector(ganache)
     const simulator = new Simulator(connector, console.log)
     const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider, console.log)
-    //const resp = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
-    //const safeTx = resp.data
-    
-    // It is also possible to directly define the tx
-    const safeTx: MultisigTransaction = {
-        safe: "0xcd1883D83aEd27a87cC7572eb8F9855A0BdD944e",
-        to: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D",
-        value: "0",
-        //data: new ethers.utils.Interface(["function withdraw() external"]).encodeFunctionData("withdraw", []),
-        data: "0x8d80ff0a00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000112006810e776880c02933d47db1b9fc05908e5386b9600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044095ea7b30000000000000000000000004f8ad938eba0cd19155a835f617317a6e788c8680000000000000000000000000000000000000000000000b8e7bfde5db9bbc000004f8ad938eba0cd19155a835f617317a6e788c86800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000024b6b55f250000000000000000000000000000000000000000000000b8e7bfde5db9bbc0000000000000000000000000000000",
-        operation: 1,
-        nonce: 0,
-        safeTxGas: "0",
-        baseGas: "0",
-        gasPrice: "0",
-        gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero,
-        safeTxHash: ""
-    }
+    const resp = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
+    const safeTx = resp.data
     
     console.log(safeTx)
     const safeInfo = await infoProvider.loadInfo(safeTx.safe)

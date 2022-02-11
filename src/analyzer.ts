@@ -10,7 +10,11 @@ export class HandlerAnalyzer implements Analyzer {
 
     handleStep(data: StepData) {
         for(const handler of this.handlers) {
-            handler.handle(data)
+            try {
+                handler.handle(data)
+            } catch (e) {
+                console.warn(e)
+            }
         }
     }
 }

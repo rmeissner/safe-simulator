@@ -1,4 +1,5 @@
 import { BigNumber, ethers } from "ethers"
+import { arrayify, hexlify, hexZeroPad } from "ethers/lib/utils"
 import { StepData } from "../types"
 
 const peekStack = (stack: Buffer[], position: number): Buffer => {
@@ -42,7 +43,7 @@ export const parseDelegateCall = (step: StepData): CallParams => {
 
 export const parseCall = (step: StepData): CallParams => {
     const gas = BigNumber.from(peekStack(step.stack, 0)).toNumber()
-    const to = ethers.utils.getAddress(ethers.utils.hexlify(peekStack(step.stack, 1)))
+    const to = ethers.utils.getAddress(hexZeroPad(peekStack(step.stack, 1), 20))
     const value = BigNumber.from(peekStack(step.stack, 2)).toHexString()
     const dataLocation = BigNumber.from(peekStack(step.stack, 3)).toNumber()
     const dataSize = BigNumber.from(peekStack(step.stack, 4)).toNumber()
@@ -70,7 +71,7 @@ export const parseReturn = (step: StepData) => {
         const dataSize = BigNumber.from(peekStack(step.stack, 1)).toNumber()
         const data = ethers.utils.hexlify(loadMem(step.memory, dataLocation, dataSize))
         return data
-    } catch {
+    } catch(e) {
         return undefined
     }
 }
