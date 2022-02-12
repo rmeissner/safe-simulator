@@ -1,15 +1,15 @@
 import { ethers } from "ethers";
 import { Result } from "ethers/lib/utils";
 
-export interface DecodingResult {
+export interface EventDecodingResult {
     signature: string,
     decoded: Result
 }
 
-export const decodeLog = async(log: ethers.providers.Log, signaturesProvider: (topic: string) => Promise<string[]>): Promise<DecodingResult[]> => {
+export const decodeLog = async(log: ethers.providers.Log, signaturesProvider: (topic: string) => Promise<string[]>): Promise<EventDecodingResult[]> => {
     if (log.topics.length === 0) throw Error("No topics provided")
     const signatures = await signaturesProvider(log.topics[0])
-    const results: DecodingResult[] = []
+    const results: EventDecodingResult[] = []
     for (const signature of signatures) {
         try {
             const iface = new ethers.utils.Interface([signature])

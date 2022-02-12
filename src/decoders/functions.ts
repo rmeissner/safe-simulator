@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { FunctionFragment, Result } from "ethers/lib/utils";
 
-export interface DecodingResult {
+export interface FunctionDecodingResult {
     signature: string,
     decoded: Result
 }
@@ -16,11 +16,11 @@ const calculateMaxLength = (func: FunctionFragment): number | undefined => {
     return maxLegth
 }
 
-export const decodeFunctionData = async(data: string, signaturesProvider: (selector: string) => Promise<string[]>): Promise<DecodingResult[]> => {
+export const decodeFunctionData = async(data: string, signaturesProvider: (selector: string) => Promise<string[]>): Promise<FunctionDecodingResult[]> => {
     if (!ethers.utils.isHexString(data) || data.length < 10) throw Error("Invalid data provided")
     const selector = data.slice(0, 10)
     const signatures = await signaturesProvider(selector)
-    const results: DecodingResult[] = []
+    const results: FunctionDecodingResult[] = []
     for (const signature of signatures) {
         try {
             const iface = new ethers.utils.Interface([signature])
