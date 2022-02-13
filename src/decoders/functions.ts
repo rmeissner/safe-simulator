@@ -7,7 +7,7 @@ export interface FunctionDecodingResult {
 }
 
 const calculateMaxLength = (func: FunctionFragment): number | undefined => {
-    let maxLegth = 10
+    let maxLegth = 66
     for (const input of func.inputs) {
         // Tuples and arrays extend the length ... ignore
         if (!!input.components || !!input.arrayLength) return undefined
