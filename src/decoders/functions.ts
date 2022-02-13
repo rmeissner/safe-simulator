@@ -10,7 +10,7 @@ const calculateMaxLength = (func: FunctionFragment): number | undefined => {
     let maxLegth = 66
     for (const input of func.inputs) {
         // Tuples and arrays extend the length ... ignore
-        if (!!input.components || !!input.arrayLength) return undefined
+        if (input.baseType === "bytes" || !!input.components || !!input.arrayLength) return undefined
         maxLegth += 64
     }
     return maxLegth
