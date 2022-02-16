@@ -2,6 +2,7 @@
 require('dotenv').config()
 
 import axios from 'axios'
+import fs from 'fs'
 import { ethers } from 'ethers'
 import Ganache from 'ganache-core'
 import { exit } from 'process'
@@ -16,20 +17,32 @@ import { decodeFunctionData } from '../src/decoders/functions'
 import { decodeSafeStorageChange } from '../src/decoders/storages'
 import { loadEventSignatures, loadFunctionSignatures } from '../src/decoders/4byte'
 
+const loadSafeTx = async(): Promise<MultisigTransaction> => {
+    const safeTxFile = process.env.SAFE_TX_FILE
+    if (safeTxFile) {
+        return JSON.parse(fs.readFileSync(safeTxFile, "utf-8"))
+    }
+    const safeTxHash = process.env.SAFE_TX_HASH
+    if (safeTxHash) {
+        const serviceUrl = process.env.SERVICE_URL
+        if (!serviceUrl) throw Error("Require service URL to load tx by hash")
+        const resp = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
+        return resp.data
+    }
+    throw Error("Missing Safe tx information")
+}
+
 async function run(): Promise<void> {
     const verbose: boolean = process.env.VERBOSE === "true"
     const nodeUrl = process.env.NODE_URL
     const network = process.env.NETWORK!!
-    const serviceUrl = process.env.SERVICE_URL!!
-    const safeTxHash = process.env.SAFE_TX_HASH!!
     const options: any = { dbPath: "/", fork: nodeUrl || network, gasLimit: 100_000_000, gasPrice: "0x0", vmErrorsOnRPCResponse: false, logging: { quiet: !verbose, verbose: verbose, debug: verbose } }
     const ganache = Ganache.provider(options)
     const connector = new GanacheCoreConnector(ganache)
     const simulator = new Simulator(connector, console.log)
     const provider = new ethers.providers.Web3Provider(connector as any)
     const infoProvider = new SafeInfoProvider(provider, console.log)
-    const resp = await axios.get<MultisigTransaction>(`${serviceUrl}/api/v1/multisig-transactions/${safeTxHash}`)
-    const safeTx = resp.data
+    const safeTx = await loadSafeTx()
     
     console.log(safeTx)
     const safeInfo = await infoProvider.loadInfo(safeTx.safe)
