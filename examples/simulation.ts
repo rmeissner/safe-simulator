@@ -32,6 +32,14 @@ const loadSafeTx = async(): Promise<MultisigTransaction> => {
     throw Error("Missing Safe tx information")
 }
 
+const tryDefault = async <T>(generator: (() => T | Promise<T>), fallback: T | Promise<T>): Promise<T> => {
+    try {
+        return await generator()
+    } catch (e) {
+        return fallback
+    }
+}  
+
 async function run(): Promise<void> {
     const verbose: boolean = process.env.VERBOSE === "true"
     const nodeUrl = process.env.NODE_URL
@@ -81,9 +89,9 @@ async function run(): Promise<void> {
         console.log("")
         let i = 1
         for (const call of safeCalls) {
-            const decodedData = await decodeFunctionData(call.data, loadFunctionSignatures)
             console.log(`Call ${i++}`)
             console.log(call)
+            const decodedData = await tryDefault(() => decodeFunctionData(call.data, loadFunctionSignatures), [])
             if (decodedData.length > 0) {
                 console.log("Decoded data:")
                 console.log(decodedData[0])
@@ -100,8 +108,8 @@ async function run(): Promise<void> {
         let i = 1
         for (const call of calls) {
             console.log(`Call ${i++}`)
-            const decodedData = await decodeFunctionData(call.data, loadFunctionSignatures)
             console.log(call)
+            const decodedData = await tryDefault(() => decodeFunctionData(call.data, loadFunctionSignatures), [])
             if (decodedData.length > 0) {
                 console.log("Decoded data:")
                 console.log(decodedData[0])
@@ -113,7 +121,7 @@ async function run(): Promise<void> {
     console.log("Transaction Events:")
     for (const log of txReceipt.logs) {
         console.log("")
-        const decodedData = await decodeLog(log, loadEventSignatures)
+        const decodedData = await tryDefault(() => decodeLog(log, loadEventSignatures), Promise.resolve([]))
         if (decodedData.length === 0) {
             console.log("Unknown event:")
             console.log(log)
